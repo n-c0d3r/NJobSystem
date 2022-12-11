@@ -47,6 +47,8 @@ namespace NJS {
 		void _SetJob(Job& job) { m_Job = job; }
 		Waiter* GetWaiter() { return m_Waiter; }
 		void SetWaiter(Waiter* waiter) { m_Waiter = waiter; }
+		bool IsWaiting();
+		WorkerThread* GetWorkingThread() { return m_WorkerThread; }
 
 	};
 

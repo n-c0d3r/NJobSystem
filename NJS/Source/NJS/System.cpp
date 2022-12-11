@@ -43,7 +43,7 @@ namespace NJS {
 	}
 	void System::Release() {
 
-		m_IsRunning = true;
+		m_IsRunning = false;
 
 		for (U32 i = 0; i < m_WorkerThreadCount; ++i) {
 
@@ -62,7 +62,19 @@ namespace NJS {
 
 	void System::Schedule(Job* job) {
 
+		U32 minBusyIndicatorIndex = 0; 
+		for (U32 i = 1; i < m_WorkerThreadCount; ++i) {
 
+			if (m_WorkerThreadVector[i]->GetBusyIndicator() 
+				< m_WorkerThreadVector[minBusyIndicatorIndex]->GetBusyIndicator()) {
+
+				minBusyIndicatorIndex = i;
+
+			}
+
+		}
+
+		m_WorkerThreadVector[minBusyIndicatorIndex]->Schedule(job);
 
 	}
 

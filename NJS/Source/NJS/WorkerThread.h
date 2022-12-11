@@ -59,6 +59,7 @@ namespace NJS {
 		LPVOID GetMainFiber() { return m_MainFiber; }
 #endif
 		System* GetSystem() { return m_System; }
+		U32 GetBusyIndicator() { return m_BusyIndicator; }
 
 	};
 

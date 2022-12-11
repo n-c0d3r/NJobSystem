@@ -48,6 +48,21 @@ namespace NJS {
 
 		m_STDThread.join();
 
+		//Create Coroutines
+		for (auto it = m_CoroutineList.begin(); it != m_CoroutineList.end(); ++it) {
+
+			Coroutine* coroutine = *it;
+
+			coroutine->Release();
+
+		}
+
+		m_CoroutineList.clear();
+
+#ifdef WIN32
+		//DeleteFiber(m_MainFiber);
+#endif
+
 		delete this;
 	}
 
@@ -87,6 +102,8 @@ namespace NJS {
 
 					m_JobSchedulingQueue.push(job);
 
+					break;
+
 				}
 				else {
 
@@ -106,29 +123,20 @@ namespace NJS {
 
 				m_CoroutineWaitingQueue.pop();
 
-				Waiter* waiter = coroutine->GetWaiter();
-
-				bool isWaiting = false;
-
-				if (waiter == 0) {
-
-					isWaiting = false;
-
-				}
-				else if (!waiter->IsWaiting()) {
-
-					isWaiting = false;
-
-				}
-				else {
-
-					isWaiting = true;
-
-				}
-
-				if (!isWaiting) {
+				if (!coroutine->IsWaiting()) {
 
 					coroutine->Remuse();
+
+					if (!coroutine->IsWaiting()) {
+
+						PushCoroutine(coroutine);
+
+					}
+					else {
+
+						m_CoroutineWaitingQueue.push(coroutine);
+
+					}
 
 				}
 				else {

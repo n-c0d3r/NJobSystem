@@ -5,6 +5,7 @@
 struct SampleJobParam {
 
 	NJS::U32 index;
+	NJS::U32 jobCount;
 
 };
 
@@ -43,14 +44,13 @@ bool DemoWaiter::IsWaiting() {
 
 int main() {
 
-	NJS::System* system = new NJS::System(std::thread::hardware_concurrency() / 2, 64);
+	NJS::System* system = new NJS::System(std::thread::hardware_concurrency(), 256);
 
 	system->Start();
 
 
 
-	NJS::U32 jobCount = 5;
-
+	NJS::U32 jobCount = 12;
 	std::vector<SampleJobParam> params(jobCount);
 	std::vector<NJS::Job> jobs(jobCount);
 
@@ -58,17 +58,22 @@ int main() {
 
 		[](NJS::Coroutine* coroutine) {
 
-			SampleJobParam param = coroutine->_GetJob().TParam<SampleJobParam>();
+			SampleJobParam& param = coroutine->_GetJob().TParam<SampleJobParam>();
 
 			std::cout << param.index << " Job Executed" << std::endl;
 
-			coroutine->_Yield(new DemoWaiter(10));
+			DemoWaiter waiter(10);
+
+			coroutine->_Yield(&waiter);
+
+			if(param.index == param.jobCount - 1)
+				coroutine->GetWorkingThread()->GetSystem()->Stop();
 
 			return;
 		},
 		[](NJS::Coroutine* coroutine) {
 
-			SampleJobParam param = coroutine->_GetJob().TParam<SampleJobParam>();
+			SampleJobParam& param = coroutine->_GetJob().TParam<SampleJobParam>();
 
 			std::cout << param.index << " Job Released" << std::endl;
 
@@ -78,24 +83,21 @@ int main() {
 		NJS::JobPrioriry::Medium,
 
 	};
-
 	for (NJS::U32 i = 0; i < jobCount; ++i) {
 
-		params[i] = {
-			//index
-			i
-		};
+		params[i] = { i, jobCount };
 		jobs[i] = sampleJob;
 		jobs[i].param = &params[i];
 
 	}
-
 	for (NJS::U32 i = 0; i < jobCount; ++i)
-		system->GetWorkerThread(0)->Schedule(&jobs[i]);
+		system->Schedule(&jobs[i]);
 
 
 
-	while (true);
+	while (system->IsRunning());
+
+	system->Release();
 
 	return 0;
 }
